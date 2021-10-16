@@ -18,6 +18,28 @@
 
 #include "Parse.h"
 
+#ifndef WIN32
+#include <dlfcn.h> // get .so lib path on linux
+#include <libgen.h> // for dirname
+
+
+extern "C"
+{
+
+void get_efusion_so_path(char* path)
+{
+    Dl_info info;
+    if (dladdr((void*)"get_efusion_so_path", &info))
+    {
+        //printf("Loaded from path = %s\n", info.dli_fname);
+        strcpy(path, info.dli_fname); 
+    }
+}
+
+} // extern "C"
+
+#endif
+
 Parse::Parse()
 {
 
@@ -67,7 +89,13 @@ int Parse::arg(int argc, char** argv, const char* str, int &val) const
 
 std::string Parse::shaderDir() const
 {
-    std::string currentVal = STR(SHADER_DIR);
+    //std::string currentVal = STR(SHADER_DIR);
+    // linux only 
+    char buf[256];
+    get_efusion_so_path(buf);
+    std::string efusion_lib_folder(dirname(buf));
+    std::string currentVal = efusion_lib_folder + "/ElasticFusionShaders";
+    // TODO Mac OS and Win 
 
     assert(pangolin::FileExists(currentVal) && "Shader directory not found!");
 

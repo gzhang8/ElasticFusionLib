@@ -71,6 +71,7 @@ class ElasticFusion
         EFUSION_API void processFrame(const unsigned char * rgb,
                           const unsigned short * depth,
                           const int64_t & timestamp,
+                          float depth_factor,
                           const Eigen::Matrix4f * inPose = 0,
                           const float weightMultiplier = 1.f,
                           const bool bootstrap = false);
@@ -245,7 +246,7 @@ class ElasticFusion
         /**
          * Saves out a .ply mesh file of the current model
          */
-        EFUSION_API void savePly();
+        EFUSION_API void savePly(std::string ply_fname, float save_confidence=-1.0f);
 
         /**
          * Renders a normalised view of the input raw depth for displaying as an OpenGL texture
@@ -266,7 +267,7 @@ class ElasticFusion
         Deformation localDeformation;
         Deformation globalDeformation;
 
-        const std::string saveFilename;
+        std::string saveFilename;
         std::map<std::string, GPUTexture*> textures;
         std::map<std::string, ComputePack*> computePacks;
         std::map<std::string, FeedbackBuffer*> feedbackBuffers;
@@ -276,7 +277,7 @@ class ElasticFusion
         void createFeedbackBuffers();
 
         void filterDepth();
-        void metriciseDepth();
+        void metriciseDepth(float depth_factor);
 
         bool denseEnough(const Img<Eigen::Matrix<unsigned char, 3, 1>> & img);
 

@@ -262,7 +262,10 @@ void GlobalModel::renderPointCloud(pangolin::OpenGlMatrix mvp,
 
     program->Bind();
 
-    program->setUniform(Uniform("MVP", mvp));
+    // double
+    Eigen::Matrix4f mvp_eigen = Eigen::Map<Eigen::Matrix<double,4,4,Eigen::ColMajor> >(mvp.m).cast<float>();
+
+    program->setUniform(Uniform("MVP", mvp_eigen));
 
     program->setUniform(Uniform("threshold", threshold));
 

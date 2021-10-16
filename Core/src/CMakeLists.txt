@@ -1,23 +1,29 @@
-cmake_minimum_required(VERSION 2.6.0)
+cmake_minimum_required(VERSION 2.8)
 
 project(libefusion)
+find_package(CUDA REQUIRED)
+message(${CUDA_INCLUDE_DIRS} )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 
 find_package(Pangolin 0.1 REQUIRED)
-find_package(CUDA REQUIRED)
+
+find_package( BLAS REQUIRED )
+
 find_package(SuiteSparse REQUIRED)
 
 set(efusion_SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Shaders" CACHE PATH "Where the shaders live")
 
+
 include_directories(${Pangolin_INCLUDE_DIRS})
 include_directories(${CUDA_INCLUDE_DIRS})
-include_directories(${EIGEN_INCLUDE_DIRS})
+# include_directories(${EIGEN_INCLUDE_DIRS})
 include_directories(${SUITESPARSE_INCLUDE_DIRS})
 
 file(GLOB srcs *.cpp)
 file(GLOB utils_srcs Utils/*.cpp)
 file(GLOB shader_srcs Shaders/*.cpp)
+file(GLOB shader_files Shaders/*.glsl Shaders/*.frag Shaders/*.geom Shaders/*.vert)
 file(GLOB cuda Cuda/*.cu)
 file(GLOB containers Cuda/containers/*.cpp)
 
@@ -29,15 +35,18 @@ if(WIN32)
   file(GLOB containers_hdrs Cuda/containers/*.hpp)
 endif()
 
-set(CUDA_ARCH_BIN "30 35 50 52 61" CACHE STRING "Specify 'real' GPU arch to build binaries for, BIN(PTX) format is supported. Example: 1.3 2.1(1.3) or 13 21(13)")
+set(CUDA_ARCH_BIN "52 61 70" CACHE STRING "Specify 'real' GPU arch to build binaries for, BIN(PTX) format is supported. Example: 1.3 2.1(1.3) or 13 21(13)")
 set(CUDA_ARCH_PTX "" CACHE STRING "Specify 'virtual' PTX arch to build PTX intermediate code for. Example: 1.0 1.2 or 10 12")              
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
-include(CudaComputeTargetFlags.cmake)                  
-APPEND_TARGET_ARCH_FLAGS()
+#include(CudaComputeTargetFlags.cmake)                  
+#APPEND_TARGET_ARCH_FLAGS()
+
 
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}  "-Xcompiler;-fPIC;")           
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "--ftz=true;--prec-div=false;--prec-sqrt=false") 
+
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_61,code=sm_61)
 
 CUDA_COMPILE(cuda_objs ${cuda})
 
@@ -66,6 +75,7 @@ add_library(efusion SHARED
             ${shader_hdrs}
             ${cuda_hdrs} 
             ${containers_hdrs}
+            c_api.cc
 )
 
 target_link_libraries(efusion
@@ -73,7 +83,7 @@ target_link_libraries(efusion
                       ${Pangolin_LIBRARIES}
                       ${CUDA_LIBRARIES}
                       ${SUITESPARSE_LIBRARIES}
-					  ${EXTRA_WINDOWS_LIBS}
+                      ${EXTRA_WINDOWS_LIBS}
 )
 
 INSTALL(TARGETS efusion
@@ -81,3 +91,6 @@ INSTALL(TARGETS efusion
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
 )
+
+install(FILES ${shader_files} DESTINATION lib/ElasticFusionShaders)
+

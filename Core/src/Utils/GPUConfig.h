@@ -84,11 +84,6 @@ class GPUConfig
             rgbStepMap["GeForce GTX 970"] = std::pair<int, int>(160, 64);
             rgbResMap["GeForce GTX 970"] = std::pair<int, int>(128, 272);
             so3StepMap["GeForce GTX 970"] = std::pair<int, int>(96, 64);
-               
-            icpStepMap["GeForce GTX 965M"] = std::pair<int, int>(256, 32);
-            rgbStepMap["GeForce GTX 965M"] = std::pair<int, int>(224, 16);
-            rgbResMap["GeForce GTX 965M"] = std::pair<int, int>(384, 480);
-            so3StepMap["GeForce GTX 965M"] = std::pair<int, int>(160, 32);
 
             icpStepMap["GeForce GTX 675MX"] = std::pair<int, int>(128, 80);
             rgbStepMap["GeForce GTX 675MX"] = std::pair<int, int>(128, 48);
@@ -119,6 +114,11 @@ class GPUConfig
             rgbStepMap["GeForce GTX 1070"] = std::pair<int, int>(128, 96);
             rgbResMap["GeForce GTX 1070"] = std::pair<int, int>(256, 464);
             so3StepMap["GeForce GTX 1070"] = std::pair<int, int>(256, 48);
+            
+            icpStepMap["GeForce GTX 950M"] = std::pair<int, int>(64, 80);
+            rgbStepMap["GeForce GTX 950M"] = std::pair<int, int>(96, 48);
+            rgbResMap["GeForce GTX 950M"] = std::pair<int, int>(128, 400);
+            so3StepMap["GeForce GTX 950M"] = std::pair<int, int>(64, 48);
 
             if(icpStepMap.find(dev) == icpStepMap.end())
             {

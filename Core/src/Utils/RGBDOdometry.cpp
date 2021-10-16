@@ -160,7 +160,7 @@ void RGBDOdometry::initICP(GPUTexture * predictedVertices, GPUTexture * predicte
     for(int i = 1; i < NUM_PYRS; ++i)
     {
         resizeVMap(vmaps_curr_[i - 1], vmaps_curr_[i]);
-        resizeNMap(nmaps_curr_[i - 1], nmaps_curr_[i]);
+        resizeNMap(vmaps_curr_[i - 1], vmaps_curr_[i]);
     }
 
     cudaDeviceSynchronize();
@@ -459,14 +459,13 @@ void RGBDOdometry::getIncrementalTransformation(Eigen::Vector3f & trans,
             }
 
             float sigmaVal = std::sqrt((float)sigma / rgbSize == 0 ? 1 : rgbSize);
-            float rgbError = std::sqrt(sigma) / (rgbSize == 0 ? 1 : rgbSize);
 
-            if(rgbOnly && rgbError > lastRGBError)
+            if(rgbOnly && sqrt(sigma) / rgbSize > lastRGBError)
             {
                 break;
             }
 
-            lastRGBError = rgbError;
+            lastRGBError = sqrt(sigma) / rgbSize;
             lastRGBCount = rgbSize;
 
             if(rgbOnly)
@@ -537,7 +536,8 @@ void RGBDOdometry::getIncrementalTransformation(Eigen::Vector3f & trans,
                         GPUConfig::getInstance().rgbStepBlocks);
                 TOCK("rgbStep");
             }
-
+            std::cout << "iter: " << j << ", ICP error: " << lastICPError
+                      << ", rgb error: " << lastRGBError << std::endl;
             Eigen::Matrix<double, 6, 1> result;
             Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_rgbd = A_rgbd.cast<double>();
             Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();

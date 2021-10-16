@@ -99,7 +99,14 @@ ElasticFusion::~ElasticFusion()
 {
     if(iclnuim)
     {
-        savePly();
+        // skip saving when name is very short
+        if (saveFilename.length() > 5) {
+            std::string filename = saveFilename;
+            filename.append(".ply");
+
+            savePly(filename);
+        }
+
     }
 
     //Output deformed pose graph
@@ -253,9 +260,11 @@ bool ElasticFusion::denseEnough(const Img<Eigen::Matrix<unsigned char, 3, 1>> & 
     return float(sum) / float(img.rows * img.cols) > 0.75f;
 }
 
+// depth_factor only works well with 1000.0f for now
 void ElasticFusion::processFrame(const unsigned char * rgb,
                                  const unsigned short * depth,
                                  const int64_t & timestamp,
+                                 float depth_factor,
                                  const Eigen::Matrix4f * inPose,
                                  const float weightMultiplier,
                                  const bool bootstrap)
@@ -268,7 +277,7 @@ void ElasticFusion::processFrame(const unsigned char * rgb,
     TICK("Preprocess");
 
     filterDepth();
-    metriciseDepth();
+    metriciseDepth(depth_factor);
 
     TOCK("Preprocess");
 
@@ -684,13 +693,15 @@ void ElasticFusion::predict()
     TOCK("IndexMap::ACTIVE");
 }
 
-void ElasticFusion::metriciseDepth()
+void ElasticFusion::metriciseDepth(float depth_factor)
 {
     std::vector<Uniform> uniforms;
 
     uniforms.push_back(Uniform("maxD", depthCutoff));
+    uniforms.push_back(Uniform("depth_factor", depth_factor));
 
     computePacks[ComputePack::METRIC]->compute(textures[GPUTexture::DEPTH_RAW]->texture, &uniforms);
+
     computePacks[ComputePack::METRIC_FILTERED]->compute(textures[GPUTexture::DEPTH_FILTERED]->texture, &uniforms);
 }
 
@@ -715,10 +726,14 @@ void ElasticFusion::normaliseDepth(const float & minVal, const float & maxVal)
     computePacks[ComputePack::NORM]->compute(textures[GPUTexture::DEPTH_RAW]->texture, &uniforms);
 }
 
-void ElasticFusion::savePly()
+void ElasticFusion::savePly(std::string ply_fname, float save_confidence)
 {
-    std::string filename = saveFilename;
-    filename.append(".ply");
+    // if save_confidence is less than zeros, that means use the class member value from
+    if (save_confidence<0 ){
+        save_confidence = confidenceThreshold;
+    }
+    std::string filename = ply_fname;//saveFilename;
+//    filename.append(".ply");
 
     // Open file
     std::ofstream fs;
@@ -732,7 +747,7 @@ void ElasticFusion::savePly()
     {
         Eigen::Vector4f pos = mapData[(i * 3) + 0];
 
-        if(pos[3] > confidenceThreshold)
+        if(pos[3] > save_confidence)
         {
             validCount++;
         }
@@ -752,6 +767,9 @@ void ElasticFusion::savePly()
           "\nproperty uchar green"
           "\nproperty uchar blue";
 
+    fs << "\nproperty float inittime"
+       << "\nproperty float updatetime";
+
     fs << "\nproperty float nx"
           "\nproperty float ny"
           "\nproperty float nz";
@@ -770,7 +788,7 @@ void ElasticFusion::savePly()
     {
         Eigen::Vector4f pos = mapData[(i * 3) + 0];
 
-        if(pos[3] > confidenceThreshold)
+        if(pos[3] > save_confidence)
         {
             Eigen::Vector4f col = mapData[(i * 3) + 1];
             Eigen::Vector4f nor = mapData[(i * 3) + 2];
@@ -796,6 +814,14 @@ void ElasticFusion::savePly()
             fpout.write (reinterpret_cast<const char*> (&r), sizeof (unsigned char));
             fpout.write (reinterpret_cast<const char*> (&g), sizeof (unsigned char));
             fpout.write (reinterpret_cast<const char*> (&b), sizeof (unsigned char));
+
+            // init time
+            memcpy (&value, &col[2], sizeof (float));
+            fpout.write (reinterpret_cast<const char*> (&value), sizeof (float));
+
+            // update time
+            memcpy (&value, &col[3], sizeof (float));
+            fpout.write (reinterpret_cast<const char*> (&value), sizeof (float));
 
             memcpy (&value, &nor[0], sizeof (float));
             fpout.write (reinterpret_cast<const char*> (&value), sizeof (float));

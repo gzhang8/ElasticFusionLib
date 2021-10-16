@@ -24,17 +24,18 @@ out float FragColor;
 
 uniform usampler2D gSampler;
 uniform float maxD;
+uniform float depth_factor; // was 1000.0f hard coded
 
 void main()
 {
     uint value = uint(texture(gSampler, texcoord.xy));
     
-    if(value > uint(maxD * 1000.0f) || value < 300U)
+    if(value > uint(maxD * depth_factor) || value < uint(0.3 * depth_factor)) //300U)
     {
         FragColor = 0U;
     }
     else
     {
-	    FragColor = float(value) / 1000.0f;
+	    FragColor = float(value) / depth_factor;
     }
 }

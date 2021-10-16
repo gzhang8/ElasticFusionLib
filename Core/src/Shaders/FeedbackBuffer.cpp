@@ -144,7 +144,9 @@ void FeedbackBuffer::render(pangolin::OpenGlMatrix mvp,
 {
     drawProgram->Bind();
 
-    drawProgram->setUniform(Uniform("MVP", mvp));
+    Eigen::Matrix4f mvp_eigen = Eigen::Map<Eigen::Matrix<double,4,4,Eigen::ColMajor> >(mvp.m).cast<float>();
+
+    drawProgram->setUniform(Uniform("MVP", mvp_eigen));
     drawProgram->setUniform(Uniform("pose", pose));
     drawProgram->setUniform(Uniform("colorType", (drawNormals ? 1 : drawColors ? 2 : 0)));
 
